@@ -1,0 +1,62 @@
+#%RAML 1.0
+types:
+  StudentDatatype:
+    properties:
+      fname:
+        example: Example
+        type: string
+      lname:
+        example: Example
+        type: string
+title: MongoDB API
+mediaType:
+  - application/json
+version: v1
+protocols:
+  - HTTP
+/get:
+  get:
+    responses:
+      "200":
+        body:
+          type: StudentDatatype[]
+/post:
+  post:
+    body:
+      type: StudentDatatype
+    responses:
+      "200":
+        body:
+          type: StudentDatatype
+/delete/{id}:
+  delete:
+    responses:
+      "200":
+        body:
+          type: StudentDatatype
+  uriParameters:
+    id:
+      example: Example
+      type: string
+/get/{id}:
+  get:
+    responses:
+      "200":
+        body:
+          type: StudentDatatype
+  uriParameters:
+    id:
+      example: Example
+      type: string
+/put/{id}:
+  put:
+    body:
+      type: StudentDatatype
+    responses:
+      "200":
+        body:
+          type: StudentDatatype
+  uriParameters:
+    id:
+      example: Example
+      type: string
