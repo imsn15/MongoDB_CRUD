@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd">
+    <http:listener-config name="mongodb-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="mongodb-config" api="mongodb.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <mongo:config name="MongoDB_Config" doc:name="MongoDB Config" doc:id="29011471-7d5a-4396-9905-754f25c76470" >
+		<mongo:connection-string-connection connectionString="mongodb+srv://nnrg:nnrg@sainath.0oyowlk.mongodb.net/Task" />
+	</mongo:config>
+	<flow name="mongodb-main">
+        <http:listener config-ref="mongodb-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="mongodb-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="mongodb-console">
+        <http:listener config-ref="mongodb-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="mongodb-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="put:\put\(id):application\json:mongodb-config">
+		<ee:transform doc:name="Transform Message" doc:id="d81612b9-70c2-492f-807f-022441102450" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	id: attributes.uriParams.id,
+	fname: payload.fname,
+	lname: payload.lname
+	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<mongo:update-documents collectionName="Student" doc:name="Update documents" doc:id="434fb5b2-2306-489c-becf-7fd7c9e5b934" config-ref="MongoDB_Config">
+			<mongo:query ><![CDATA[#[id: payload.id]]]></mongo:query>
+		</mongo:update-documents>
+		<ee:transform doc:name="Transform Message" doc:id="6718f523-41cd-4791-9dd4-2bcf1f5a3957" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Response" : "Updation Successfull"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+    <flow name="delete:\delete\(id):mongodb-config">
+		<ee:transform doc:name="Transform Message" doc:id="6ef45f56-5ad0-451d-a28d-8067512f18dc" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	id: attributes.uriParams.id
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<mongo:remove-documents collectionName="Student" doc:name="Remove documents" doc:id="27ad065d-8c74-4534-9411-8d562d28b7de" config-ref="MongoDB_Config">
+			<mongo:query ><![CDATA[#[id: payload.id]]]></mongo:query>
+		</mongo:remove-documents>
+		<ee:transform doc:name="Transform Message" doc:id="1432e614-0d4f-4b9d-95a5-25d7702ecc55" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Response": "Deletion Success"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+    <flow name="get:\get:mongodb-config">
+		<mongo:find-documents doc:name="Find documents" doc:id="a3c2067a-53fd-4928-b975-77e16634d736" config-ref="MongoDB_Config" collectionName="Student" fields="fname,lname"/>
+		<ee:transform doc:name="Transform Message" doc:id="df366f66-004e-4bb8-bc5d-69bcc588146e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map (student, index) ->
+{
+	"LName" : student.fname,
+	"FName" : student.lname
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+	<flow name="get:\get\(id):mongodb-config">
+		<ee:transform doc:name="Transform Message" doc:id="d5b16055-1995-4d83-b817-b8d21fdcb6b6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	id: attributes.uriParams.id
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<mongo:find-documents collectionName="Student" fields="fname,lname" doc:name="Find documents" doc:id="bad634a0-0442-43b6-b988-df2025a01f97" config-ref="MongoDB_Config">
+			<mongo:query ><![CDATA[#[id: payload.id]]]></mongo:query>
+		</mongo:find-documents>
+		<ee:transform doc:name="Transform Message" doc:id="364b378c-6476-4ec5-828c-fa2a87c453d9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+payload map (student, index) ->
+{
+	"FName" : student.fname,
+	"LName" : student.lname
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="890d0b09-5e81-4c59-91d2-bc04cb4b6495" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload[0]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+    <flow name="post:\post:application\json:mongodb-config">
+		<ee:transform doc:name="Transform Message" doc:id="007133be-1b5a-40ac-ba08-cb2dfb5ad280" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"fname": payload.fname,
+	"lname": payload.lname
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<mongo:insert-document doc:name="Insert document" doc:id="256da67c-22e5-43f2-b7a3-83127186df81" config-ref="MongoDB_Config" collectionName="Student"/>
+		<ee:transform doc:name="Transform Message" doc:id="03c90cf5-c7ba-4f28-aebb-42f41d0349d4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Message":"Data Insertion Successfull"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+</mule>
